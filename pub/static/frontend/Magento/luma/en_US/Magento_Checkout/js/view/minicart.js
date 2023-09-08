@@ -1,0 +1,1 @@
+/var/www/html/magento2.loc/vendor/magento/module-checkout/view/frontend/web/js/view/minicart.js
