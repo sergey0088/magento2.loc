@@ -1,0 +1,1 @@
+/var/www/html/magento2.loc/vendor/magento/module-sales/view/adminhtml/web/order/create/giftmessage.js
