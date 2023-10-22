@@ -16,8 +16,14 @@ use Magento\Framework\Exception\NoSuchEntityException;
 
 class CategoryRepository implements CategoryRepositoryInterface
 {
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $categoryCollectionFactory;
 
+    /**
+     * @var CategoryInterfaceFactory
+     */
     private CategoryInterfaceFactory $categoryFactory;
 
     public function __construct(

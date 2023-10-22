@@ -2,40 +2,40 @@
 
 namespace HwPlugin\CustomerLogin\Observer;
 
-use Magento\Framework\App\ObjectManager;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\DB\Adapter\Pdo\Mysql;
+use HwPlugin\CustomerLogin\Model\ResourceModel\AccountRepository;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Zend_Db_Adapter_Exception;
 
 class CustomerLoginObserver implements ObserverInterface
 {
-    protected ResourceConnection $resource;
+    /**
+     * @var AccountRepository
+     */
+    protected AccountRepository $accountRepository;
+    /**
+     * @var RemoteAddress
+     */
+    protected RemoteAddress $remote;
 
-    public function __construct(ResourceConnection $resource)
-    {
-        $this->resource = $resource;
+    public function __construct(
+        AccountRepository $accountRepository,
+        RemoteAddress     $remote
+    ) {
+        $this->accountRepository = $accountRepository;
+        $this->remote = $remote;
     }
 
     /**
-     * @throws Zend_Db_Adapter_Exception
+     * @param Observer $observer
+     * @return void
      */
-    public function execute(Observer $observer): string
+    public function execute(Observer $observer): void
     {
-        $objectManager = ObjectManager::getInstance();
-        $remote = $objectManager->get('Magento\Framework\HTTP\PhpEnvironment\RemoteAddress');
-        $customer = $observer->getEvent()->getData('customer');
+        $customerId = $observer->getEvent()->getData('customer')->getId();
 
-        /** @var ResourceConnection $this ->resource */
-        /** @var Mysql $conn */
-        $conn = $this->resource->getConnection();
-        $table = $this->resource->getTableName('hw_plugin_user');
-        $bind = [
-            'customer_id' => $customer->getId(),
-            'ip_address' => $remote->getRemoteAddress()
-        ];
-        $conn->insert($table, $bind);
-        return $conn->lastInsertId($table);
+        $ip_address = $this->remote->getRemoteAddress();
+
+        $this->accountRepository->save($customerId, $ip_address);
     }
 }

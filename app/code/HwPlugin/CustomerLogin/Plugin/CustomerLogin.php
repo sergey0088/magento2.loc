@@ -4,19 +4,28 @@ declare(strict_types=1);
 
 namespace HwPlugin\CustomerLogin\Plugin;
 
-use Magento\Framework\App\ObjectManager;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\DB\Adapter\Pdo\Mysql;
-use Magento\Framework\Exception\InvalidEmailOrPasswordException;
+use HwPlugin\CustomerLogin\Model\ResourceModel\AccountRepository;
 use Magento\Customer\Model\AccountManagement;
+use Magento\Framework\Exception\InvalidEmailOrPasswordException;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 
 class CustomerLogin
 {
-    protected ResourceConnection $resource;
+    /**
+     * @var AccountRepository
+     */
+    private AccountRepository $accountRepository;
+    /**
+     * @var RemoteAddress
+     */
+    private RemoteAddress $remote;
 
-    public function __construct(ResourceConnection $resource)
-    {
-        $this->resource = $resource;
+    public function __construct(
+        AccountRepository $accountRepository,
+        RemoteAddress $remote
+    ) {
+        $this->accountRepository = $accountRepository;
+        $this->remote = $remote;
     }
 
     /**
@@ -24,21 +33,14 @@ class CustomerLogin
      * @param $username
      * @param $password
      * @return array|null
+     * @throws InvalidEmailOrPasswordException
+     * @throws \Zend_Db_Statement_Exception
      */
     public function beforeAuthenticate(AccountManagement $subject, $username, $password): ?array
     {
-        $objectManager = ObjectManager::getInstance();
-        $remote = $objectManager->get('Magento\Framework\HTTP\PhpEnvironment\RemoteAddress');
+        $ip_address = $this->remote->getRemoteAddress();
 
-        /** @var ResourceConnection $this ->resource */
-        /** @var Mysql $conn */
-        $conn = $this->resource->getConnection();
-        $table = $this->resource->getTableName('hw_plugin_user');
-        $ip_address = $remote->getRemoteAddress();
-
-        $sql = "SELECT * FROM $table WHERE ip_address = '$ip_address'";
-
-        if ($conn->query($sql)->fetchAll()) {
+        if ($this->accountRepository->validation($ip_address)) {
             throw new InvalidEmailOrPasswordException(__('Invalid login or password.'));
         }
         return null;
